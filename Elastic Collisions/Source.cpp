@@ -44,10 +44,22 @@ private:
 		FillCircle(vi2d(ball.x, ball.y), ball.radius);
 	}
 
+	void CheckCollision(Ball& ball)
+	{
+		if (ball.x < ball.radius || ball.x + ball.radius > ScreenWidth())
+		{
+			ball.velocityX = 0 - ball.velocityX;
+		}
+		if (ball.y < ball.radius || ball.y + ball.radius > ScreenHeight())
+		{
+			ball.velocityY = 0 - ball.velocityY;
+		}
+	}
+
 public:
 	Example()
 	{
-		sAppName = "Visualizing";
+		sAppName = "Collision";
 	}
 
 	bool OnUserCreate() override
@@ -65,6 +77,7 @@ public:
 
 		for (int i = 0; i < ballArr.size(); i++)
 		{
+			CheckCollision(ballArr[i]);
 			ballArr[i].Move();
 		}
 
@@ -76,8 +89,6 @@ public:
 		return true;
 	}
 };
-
-// hello
 
 int main()
 {
