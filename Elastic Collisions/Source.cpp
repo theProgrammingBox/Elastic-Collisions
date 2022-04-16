@@ -13,6 +13,7 @@ struct Ball
 	float x;
 	float y;
 	float radius;
+	float mass;
 
 	Ball(float VelocityX,
 		float VelocityY,
@@ -25,6 +26,7 @@ struct Ball
 		x = X;
 		y = Y;
 		radius = Radius;
+		mass = 3.14159265358979323846 * Radius * Radius;
 	}
 
 	void Move()
@@ -56,6 +58,28 @@ private:
 		}
 	}
 
+	void CheckBallCollision(Ball& ball1, Ball& ball2)
+	{
+		float dx = ball2.x - ball1.x;
+		float dy = ball2.y - ball1.y;
+		float distance = dx * dx + dy * dy;
+		float totalRadius = ball2.radius + ball1.radius;
+		if (distance < totalRadius * totalRadius)
+		{
+			float velocityX = ball1.velocityX - ball2.velocityX;
+			float velocityY = ball1.velocityY - ball2.velocityY;
+			float inverseTotalMass = 1 / (ball1.mass + ball2.mass);
+			float movingMassComponent = ball1.mass - ball2.mass;
+			float stationaryMassComponent = 2 * ball1.mass;
+
+			ball1.velocityX = (movingMassComponent * inverseTotalMass * velocityX) + ball2.velocityX;
+			ball2.velocityX = (stationaryMassComponent * inverseTotalMass * velocityX) + ball2.velocityX;
+
+			ball1.velocityY = (movingMassComponent * inverseTotalMass * velocityY) + ball2.velocityY;
+			ball2.velocityY = (stationaryMassComponent * inverseTotalMass * velocityY) + ball2.velocityY;
+		}
+	}
+
 public:
 	Example()
 	{
@@ -65,8 +89,8 @@ public:
 	bool OnUserCreate() override
 	{
 		ballArr.clear();
-		ballArr.push_back(Ball(2, 0, 100, 100, 10));
-		ballArr.push_back(Ball(-2, 0, 200, 100, 10));
+		ballArr.push_back(Ball(2, 5, 100, 100, 30));
+		ballArr.push_back(Ball(-3, -2, 200, 100, 40));
 
 		return true;
 	}
@@ -74,6 +98,8 @@ public:
 	bool OnUserUpdate(float fElapsedTime) override
 	{
 		FillRect(vi2d(0, 0), vi2d(ScreenWidth(), ScreenHeight()), BLACK);
+
+		CheckBallCollision(ballArr[0], ballArr[1]);
 
 		for (int i = 0; i < ballArr.size(); i++)
 		{
