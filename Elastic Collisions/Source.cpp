@@ -77,6 +77,8 @@ public:
 	}
 };
 
+// hello
+
 int main()
 {
 	Example demo;
