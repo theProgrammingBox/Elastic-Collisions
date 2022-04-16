@@ -53,14 +53,15 @@ public:
 	bool OnUserCreate() override
 	{
 		ballArr.clear();
-		ballArr.push_back(Ball(2, 0, 500, 500, 10));
+		ballArr.push_back(Ball(2, 0, 100, 100, 10));
+		ballArr.push_back(Ball(-2, 0, 200, 100, 10));
 
 		return true;
 	}
 
 	bool OnUserUpdate(float fElapsedTime) override
 	{
-		FillRect(vi2d(0, 0), vi2d(1000, 1000), BLACK);
+		FillRect(vi2d(0, 0), vi2d(ScreenWidth(), ScreenHeight()), BLACK);
 
 		for (int i = 0; i < ballArr.size(); i++)
 		{
@@ -79,7 +80,7 @@ public:
 int main()
 {
 	Example demo;
-	if (demo.Construct(1000, 1000, 1, 1))
+	if (demo.Construct(500, 500, 2, 2))
 		demo.Start();
 
 	return 0;
