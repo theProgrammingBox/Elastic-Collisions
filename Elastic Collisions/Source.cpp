@@ -8,31 +8,22 @@ using namespace olc;
 
 struct Ball
 {
-	float velocityX;
-	float velocityY;
-	float x;
-	float y;
+	vf2d velocity;
+	vf2d position;
 	float radius;
 	float mass;
 
-	Ball(float VelocityX,
-		float VelocityY,
-		float X,
-		float Y,
-		float Radius)
+	Ball(float VelocityX, float VelocityY, float X, float Y, float Radius)
 	{
-		velocityX = VelocityX;
-		velocityY = VelocityY;
-		x = X;
-		y = Y;
+		velocity = vf2d(VelocityX, VelocityY);
+		position = vf2d(X, Y);
 		radius = Radius;
 		mass = 3.14159265358979323846 * Radius * Radius;
 	}
 
-	void Move()
+	void Move(float time)
 	{
-		x += velocityX;
-		y += velocityY;
+		position += velocity * time;
 	}
 };
 
@@ -40,43 +31,41 @@ class Example : public olc::PixelGameEngine
 {
 private:
 	vector<Ball> ballArr;
+	float time;
 
 	void RenderBall(Ball ball)
 	{
-		FillCircle(vi2d(ball.x, ball.y), ball.radius);
+		FillCircle(ball.position, ball.radius);
 	}
 
 	void CheckCollision(Ball& ball)
 	{
-		if (ball.x < ball.radius || ball.x + ball.radius > ScreenWidth())
+		if (ball.position.x < ball.radius || ball.position.x + ball.radius > ScreenWidth())
 		{
-			ball.velocityX = 0 - ball.velocityX;
+			ball.velocity.x = 0 - ball.velocity.x;
 		}
-		if (ball.y < ball.radius || ball.y + ball.radius > ScreenHeight())
+		if (ball.position.y < ball.radius || ball.position.y + ball.radius > ScreenHeight())
 		{
-			ball.velocityY = 0 - ball.velocityY;
+			ball.velocity.y = 0 - ball.velocity.y;
 		}
 	}
 
 	void CheckBallCollision(Ball& ball1, Ball& ball2)
 	{
-		float dx = ball2.x - ball1.x;
-		float dy = ball2.y - ball1.y;
-		float distance = dx * dx + dy * dy;
+		vf2d dPosition = ball1.position - ball2.position;
+		float distanceSquared = dPosition.mag2();
 		float totalRadius = ball2.radius + ball1.radius;
-		if (distance < totalRadius * totalRadius)
+		if (distanceSquared < totalRadius * totalRadius)
 		{
-			float velocityX = ball1.velocityX - ball2.velocityX;
-			float velocityY = ball1.velocityY - ball2.velocityY;
+			vf2d dDelocity = ball1.velocity - ball2.velocity;
+			float dot = dDelocity.dot(dPosition);
+
 			float inverseTotalMass = 1 / (ball1.mass + ball2.mass);
-			float movingMassComponent = ball1.mass - ball2.mass;
-			float stationaryMassComponent = 2 * ball1.mass;
+			float massComponent1 = 2 * ball2.mass * inverseTotalMass;
+			float massComponent2 = 2 * ball1.mass * inverseTotalMass;
 
-			ball1.velocityX = (movingMassComponent * inverseTotalMass * velocityX) + ball2.velocityX;
-			ball2.velocityX = (stationaryMassComponent * inverseTotalMass * velocityX) + ball2.velocityX;
-
-			ball1.velocityY = (movingMassComponent * inverseTotalMass * velocityY) + ball2.velocityY;
-			ball2.velocityY = (stationaryMassComponent * inverseTotalMass * velocityY) + ball2.velocityY;
+			ball1.velocity = ball1.velocity - massComponent1 * dot / distanceSquared * dPosition;
+			ball2.velocity = ball2.velocity - massComponent2 * dot / distanceSquared * (vf2d(0, 0) - dPosition);
 		}
 	}
 
@@ -91,6 +80,7 @@ public:
 		ballArr.clear();
 		ballArr.push_back(Ball(2, 5, 100, 100, 30));
 		ballArr.push_back(Ball(-3, -2, 200, 100, 40));
+		time = 0.1;
 
 		return true;
 	}
@@ -99,13 +89,15 @@ public:
 	{
 		FillRect(vi2d(0, 0), vi2d(ScreenWidth(), ScreenHeight()), BLACK);
 
-		CheckBallCollision(ballArr[0], ballArr[1]);
+		if (GetKey(olc::Key::UP).bHeld)  time += 0.01;
+		if (GetKey(olc::Key::DOWN).bHeld)  time -= 0.01;
 
 		for (int i = 0; i < ballArr.size(); i++)
 		{
+			ballArr[i].Move(time);
 			CheckCollision(ballArr[i]);
-			ballArr[i].Move();
 		}
+		CheckBallCollision(ballArr[0], ballArr[1]);
 
 		for (int i = 0; i < ballArr.size(); i++)
 		{
