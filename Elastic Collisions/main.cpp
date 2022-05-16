@@ -6,10 +6,10 @@
 using namespace std;
 using namespace olc;
 
-const float AIR_FRICTION = 0.99999999;
-const float CONTACT_DAMPENING = 0.9999;
+const float AIR_FRICTION = 0.999999;
+const float CONTACT_DAMPENING = 0.99;
 const int NUM_BALLS = 1000;
-const int BATCHES = 20;
+const int SIMULATION_BATCHES = 20;
 const vf2d GRAVITY = { 0.0f, 200.0f };
 
 struct Ball
@@ -107,7 +107,20 @@ private:
 		return Pixel(r * 0xff, g * 0xff, b * 0xff);
 	}
 
-	void MouseOptions(float fElapsedTime)
+	void ClearScreen()
+	{
+		for (int i = 0; i < ballArr.size(); i++)
+		{
+			FillCircle(ballArr[i].position, ballArr[i].radius, BLACK);
+		}
+
+		if (selectedBall != NULL)
+		{
+			DrawLine(selectedBall->position, prevMousePos, BLACK);
+		}
+	}
+
+	void MouseOptions()
 	{
 		if (GetMouse(0).bPressed || GetMouse(1).bPressed && ballArr.size() != 0)
 		{
@@ -129,7 +142,7 @@ private:
 		{
 			if (selectedBall != NULL)
 			{
-				selectedBall->velocity = 100 * (mousePos - selectedBall->position);
+				selectedBall->velocity = 10 * (mousePos - selectedBall->position);
 			}
 		}
 
@@ -145,6 +158,41 @@ private:
 				selectedBall->velocity = 10 * (mousePos - selectedBall->position);
 				selectedBall = NULL;
 			}
+		}
+	}
+
+	void Update(float fElapsedTime)
+	{
+		for (int iteration = 0; iteration < SIMULATION_BATCHES; iteration++)
+		{
+			for (Ball& ball : ballArr)
+			{
+				ball.Update(fElapsedTime / SIMULATION_BATCHES);
+
+				ball.BounceOffWalls(ScreenWidth(), ScreenHeight());
+			}
+
+			for (int i = 0; i < ballArr.size() - 1; i++)
+			{
+				for (int j = i + 1; j < ballArr.size(); j++)
+				{
+					ballArr[i].BallCollision(ballArr[j]);
+				}
+			}
+		}
+	}
+
+	void Render()
+	{
+		for (int i = 0; i < ballArr.size(); i++)
+		{
+			FillCircle(ballArr[i].position, ballArr[i].radius, ballArr[i].color * 0.8);
+			FillCircle(ballArr[i].position, ballArr[i].radius * 0.8, ballArr[i].color);
+		}
+
+		if (selectedBall != NULL)
+		{
+			DrawLine(selectedBall->position, mousePos, WHITE);
 		}
 	}
 
@@ -180,46 +228,13 @@ public:
 	{
 		mousePos = vf2d(GetMouseX(), GetMouseY());
 
-		for (int i = 0; i < ballArr.size(); i++)
-		{
-			FillCircle(ballArr[i].position, ballArr[i].radius, BLACK);
-		}
+		ClearScreen();
 
-		if (selectedBall != NULL)
-		{
-			DrawLine(selectedBall->position, prevMousePos, BLACK);
-		}
+		MouseOptions();
 
-		MouseOptions(fElapsedTime);
+		Update(fElapsedTime);
 
-		for (int iteration = 0; iteration < BATCHES; iteration++)
-		{
-			for (Ball& ball : ballArr)
-			{
-				ball.Update(fElapsedTime / BATCHES);
-
-				ball.BounceOffWalls(ScreenWidth(), ScreenHeight());
-			}
-
-			for (int i = 0; i < ballArr.size() - 1; i++)
-			{
-				for (int j = i + 1; j < ballArr.size(); j++)
-				{
-					ballArr[i].BallCollision(ballArr[j]);
-				}
-			}
-		}
-
-		for (int i = 0; i < ballArr.size(); i++)
-		{
-			FillCircle(ballArr[i].position, ballArr[i].radius, ballArr[i].color * 0.8);
-			FillCircle(ballArr[i].position, ballArr[i].radius * 0.8, ballArr[i].color);
-		}
-
-		if (selectedBall != NULL)
-		{
-			DrawLine(selectedBall->position, mousePos, WHITE);
-		}
+		Render();
 
 		prevMousePos = vf2d(GetMouseX(), GetMouseY());
 
